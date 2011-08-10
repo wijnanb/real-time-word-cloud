@@ -33,9 +33,10 @@
   </script>
 
   <script src="WordFreq.js"></script>
-  <script src="WordCloud.js"></script>
+  <script src="FlashWordCloud.js"></script>
   <script src="http://46.137.24.146/socket.io/socket.io.js"></script>
   <script src="jquery.json.js"></script>
+  <script type="text/javascript" src="swfobject.js"></script>
   <script type="text/javascript">
    var wordfreq = new WordFreq();
    wordfreq.setEwma(120, 'seconds');
@@ -49,8 +50,18 @@
 		}
 	});
    //var color = "color" + Math.floor ( Math.random ( ) * 5 + 1 );
-   var wordcloud = new WordCloud(wordfreq, $("#wordcloud"), $("<div class='wordclouditem'/>") );
-   u = setInterval( function() { wordcloud.redraw(); }, 100 );
+   
+   //var wordcloud = new WordCloud(wordfreq, $("#wordcloud"), $("<div class='wordclouditem'/>") );
+   //u = setInterval( function() { wordcloud.redraw(); }, 100 );
+   
+   var flashvars = {}
+   var params = { allowScriptAccess: 'always' };
+   var attributes = {};
+   
+   swfobject.embedSWF("wordcloud.swf", "wordcloud", "680", "400", "9.0.0", "expressInstall.swf", flashvars, params, attributes);
+   
+   var flash_word_cloud = new FlashWordCloud(wordfreq);
+   
   </script>
   <script type="text/javascript">
    var ffwd = 10;
