@@ -56,6 +56,7 @@
    var now = 0;
    var events;
    
+   /*
    $.ajax({
 		url: "stopwords.txt",
 		success: function(text) {
@@ -65,7 +66,7 @@
 			alert("Error getting stopwords.txt: "+textStatus);
 		}
 	});
-	
+	*/
 	 $.getJSON('fake_input.json', function(data) {
 		events = data;
 		wct = setInterval("time_passes();", 1000/ffwd);
