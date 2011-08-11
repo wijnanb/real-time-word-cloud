@@ -52,7 +52,7 @@
   <script type="text/javascript" src="swfobject.js"></script>
   <script type="text/javascript">
    var wordfreq = new WordFreq();
-   var ffwd = 60;
+   var ffwd = 100;
    var now = 0;
    var events;
    
@@ -121,6 +121,11 @@
 		}
 		$("#now").text(now);
 		$("#next").text(events[0].offset);
+		
+		if ( now == 3000 ) {
+		  clearInterval(wct);
+		  wct = setInterval("time_passes();", 1000);
+		}
    }
    
 	function stoptime() {
