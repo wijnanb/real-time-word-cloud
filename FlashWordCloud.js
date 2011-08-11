@@ -11,15 +11,15 @@ FlashWordCloud = function(wordfreq) {
 };
 
 FlashWordCloud.prototype.newWord = function (word) {
-  console.log( "new: " + word );
+  //console.log( "new: " + word );
 };
 
 FlashWordCloud.prototype.updateWord = function (word, count) {
-	console.log( "update: " + word + " " + count );
-	
-	wordcloud.fl_updateWord(word, count);
+  //console.log( "update: " + word + " " + count );
+  
+  wordcloud.fl_updateWord(word, count);
 };
 
 FlashWordCloud.prototype.removeWord = function (word) {
-  console.log( "removed: " + word );
+  //console.log( "removed: " + word );
 }

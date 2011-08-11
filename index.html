@@ -18,20 +18,33 @@
 		display: inline-block;
 		padding: 0.1em;
 	}
+	div#words_list {
+	  position: absolute;
+	  left: 700px;
+	}
+	
+	div#words_list .item {
+	  color: #CCC;
+	}
+	
+	div#words_list .item.active {
+	  color: #000;
+	}
+  
+	
+	div#words_list .item .word {
+	  width: 300px;
+	  display: inline-block;
+	}
   </style>
  </head>
  <body>
+  <div id="words_list"></div>
   <div id="wordcloud"></div>
-  <canvas id="debug" style="position: absolute; z-index: -1;"></canvas>
   <p>Current time: <span id="now"></span>, next event: <span id="next"></span></p>
+  
+  
   <script src="jquery.js"></script>
-  <script type="text/javascript">
-	$("#debug").css('top', $("#wordcloud").position().top);
-	$("#debug").css('left', $("#wordcloud").position().left);
-	$("#debug").attr('width', $("#wordcloud").width());
-	$("#debug").attr('height', $("#wordcloud").height());
-  </script>
-
   <script src="WordFreq.js"></script>
   <script src="FlashWordCloud.js"></script>
   <script src="http://46.137.24.146/socket.io/socket.io.js"></script>
@@ -39,7 +52,10 @@
   <script type="text/javascript" src="swfobject.js"></script>
   <script type="text/javascript">
    var wordfreq = new WordFreq();
-   wordfreq.setEwma(120, 'seconds');
+   var ffwd = 60;
+   var now = 0;
+   var events;
+   
    $.ajax({
 		url: "stopwords.txt",
 		success: function(text) {
@@ -49,24 +65,52 @@
 			alert("Error getting stopwords.txt: "+textStatus);
 		}
 	});
-   //var color = "color" + Math.floor ( Math.random ( ) * 5 + 1 );
-   
-   //var wordcloud = new WordCloud(wordfreq, $("#wordcloud"), $("<div class='wordclouditem'/>") );
-   //u = setInterval( function() { wordcloud.redraw(); }, 100 );
-   
+	
+	 $.getJSON('fake_input.json', function(data) {
+		events = data;
+		wct = setInterval("time_passes();", 1000/ffwd);
+   });
+
+   //wordfreq.setEwma(300/ffwd, 'seconds');
+  
+   var supported_actions = ['twitter','facebook','comment'];
+
+    $.getJSON('http://beheer.villavanthilt.be/activities.json?offset=0&limit=20&callback=?', function(data) {
+ 		var a = $.parseJSON( data.activities );
+ 		for(var i in a) {
+ 			if( $.inArray( a[i].action, supported_actions) > -1 ) {
+ 				add_words(a[i].message);
+ 			}
+ 		}
+    });
+
+    var socket = new io.Socket('46.137.24.146');
+    socket.connect();
+    socket.on('connect', function(){
+ 		socket.send( $.toJSON({ action: 'join', program: 'all' }) );
+    });
+    socket.on('disconnect', function(){
+ 		alert('disconected');
+ 		setTimeout("socket.connect();", 1000);
+    });
+    socket.on('message', function(e){ 
+ 		a = $.parseJSON( e.data );
+ 		if( $.inArray( a.activity.action, supported_actions) > -1 ) {
+ 			add_words( a.activity.message );
+ 		}
+    });
+  
+  
    var flashvars = {}
    var params = { allowScriptAccess: 'always' };
    var attributes = {};
    
-   swfobject.embedSWF("wordcloud.swf", "wordcloud", "680", "400", "9.0.0", "expressInstall.swf", flashvars, params, attributes);
+   swfobject.embedSWF("wordcloud.swf", "wordcloud", "1000", "800", "9.0.0", "expressInstall.swf", flashvars, params, attributes);
    
    var flash_word_cloud = new FlashWordCloud(wordfreq);
    
-  </script>
-  <script type="text/javascript">
-   var ffwd = 10;
-   var now = 0;
-   var events;
+   
+   
    function time_passes() {
 		now++;
 		// Assume events are sorted
@@ -77,64 +121,19 @@
 		$("#now").text(now);
 		$("#next").text(events[0].offset);
    }
-   $.getJSON('fake_input.json', function(data) {
-		events = data;
-		wct = setInterval("time_passes();", 1000/ffwd);
-   });
-
-   wordfreq.setEwma(300/ffwd, 'seconds');
-
-   function add_words(text) {
-		words = text.match(/http:\/\/[a-zA-Z0-9./?=&-]+|[#@]?[a-zA-Z][a-zA-Z'-]+/g);
-
-		{ // only count unique words, duplicate words in the same comment are ignored
-			h = {};
-			for(var i=words.length-1; i>=0; i--) { h[words[i]] = 1; }
-			words = [];
-			for(var i in h) { words.push(i); }
-		}
-
-		wordfreq.addWords(words);
-   }
-
+   
 	function stoptime() {
 		clearInterval(u);
 		clearInterval(wct);
 		clearInterval(wordfreq.ewma_timer);
 	}
-  </script>
-  <!-- Live script
-  <script type="text/javascript">
-   supported_actions = ['twitter','facebook','comment'];
-
-   $.getJSON('http://beheer.villavanthilt.be/activities.json?offset=0&limit=20&callback=?', function(data) {
-		var a = $.parseJSON( data.activities );
-		for(var i in a) {
-			if( $.inArray( a[i].action, supported_actions) > -1 ) {
-				add_words(a[i].message);
-			}
-		}
-   });
-
-   var socket = new io.Socket('46.137.24.146');
-   socket.connect();
-   socket.on('connect', function(){
-		socket.send( $.toJSON({ action: 'join', program: 'all' }) );
-   });
-   socket.on('disconnect', function(){
-		alert('disconected');
-		setTimeout("socket.connect();", 1000);
-   });
-   socket.on('message', function(e){ 
-		a = $.parseJSON( e.data );
-		if( $.inArray( a.activity.action, supported_actions) > -1 ) {
-			add_words( a.activity.message );
-		}
-   });
-
-
+  
    function add_words(text) {
-		words = text.match(/http:\/\/[a-zA-Z0-9./?=&-]+|[#@]?[a-zA-Z][a-zA-Z'-]+/g);
+      wordcloud.fl_newMessage(text);
+      
+      
+    /*
+		words = text.match(/http:\/\/[a-zA-Z0-9./?=&-]+|[#@]?[a-zA-Z][a-zA-Z'-]+/g); //textmate text highlight fix' 
 
 		{ // only count unique words, duplicate words in the same comment are ignored
 			h = {};
@@ -143,8 +142,9 @@
 			for(var i in h) { words.push(i); }
 		}
 
-		wordfreq.addWords(words);
+    wordfreq.addWords(words);
+    */
    }
-  </script>-->
+  </script>
  </body>
 </html>

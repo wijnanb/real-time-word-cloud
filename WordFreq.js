@@ -25,7 +25,7 @@ var dispatch_callback = function (/* cb array, arguments, … */) {
 	}
 };
 
-WordFreq.prototype.addWords = function (words) {
+WordFreq.prototype.addWords = function (words) {  
 	if( typeof(words) == 'string' ) words = [ words ];
 	for(var i in words) {
 		var word = words[i];
@@ -33,7 +33,7 @@ WordFreq.prototype.addWords = function (words) {
 
 		var old = this.dictionary[word.toLowerCase()];
 		if( old == undefined ) { // New word, init empty
-			old = {count: 0, caps: {}};
+			old = {count: 0, active:1, caps: {}};
 			dispatch_callback( this.cb.newWord, word.toLowerCase() );
 		}
 		if( old.caps[word] == undefined ) old.caps[word] = 0;
@@ -42,9 +42,50 @@ WordFreq.prototype.addWords = function (words) {
 		old.caps[word]++;
 
 		this.dictionary[word.toLowerCase()] = old;
+		
 		dispatch_callback( this.cb.updatedWord, word.toLowerCase(), old.count );
 	}
+	
+	this.sortDictionary();
+	this.updateList();
+	this.cleanup();
 };
+
+WordFreq.prototype.updateList = function() {
+  var output = "";
+  for(var w in this.dictionary) { 
+    output += "<div class='item "+(this.dictionary[w].active==1 ? "active" : "")+"'>";
+    output += "<span class='word'>"+w+"</span>";
+    output += "<span class='count'>"+this.dictionary[w].count+ " " + this.dictionary[w].cleanup +"</span>";
+    output += "</div>";
+  };
+  
+  $('#words_list').html(output);
+}
+
+WordFreq.prototype.sortDictionary = function() {
+  var keys = this.getSortedWords();
+  var key;
+  
+  var newDictionary = {};
+  
+  for(var i in keys ) {
+    key = keys[i];
+    
+    if ( i < 10 )  { 
+      this.dictionary[key].active = 1;
+      this.dictionary[key].cleanup = 0; 
+    }
+    else if ( this.dictionary[key].active == 1 ) { 
+      this.dictionary[key].active = 0; 
+      this.dictionary[key].cleanup = 1; 
+    }
+    
+    newDictionary[key] = this.dictionary[key];
+  }
+  
+  this.dictionary = newDictionary;
+}
 
 WordFreq.prototype.tick = function () {
 	var that = this;
@@ -61,6 +102,17 @@ WordFreq.prototype.tick = function () {
 };
 
 WordFreq.prototype.cleanup = function () {
+  
+  for(var i in this.dictionary) {
+    if ( this.dictionary[i].cleanup == 1 ) {
+      dispatch_callback( this.cb.updatedWord, i, 0 );
+      this.dictionary[i].cleanup = 0;
+    }
+  }
+  
+  this.updateList();
+  
+  /*
 	var that = this;
 	$.each(this.dictionary, function (index, value) {
 		if( value.count < that.remove_threshold ) {
@@ -68,7 +120,9 @@ WordFreq.prototype.cleanup = function () {
 			dispatch_callback( this.cb.removedWord, index );
 		}
 	});
+	*/
 }
+
 WordFreq.prototype.setEwma = function (halftime) {
 	var delta = 0.95; // Allow for performance tuning here
 	if( this.ewma_timer != null ) {
@@ -107,10 +161,12 @@ WordFreq.prototype.wipe = function () {
 	this.dictionary = {};
 };
 
-WordFreq.prototype.getWords = function () {
+WordFreq.prototype.getSortedWords = function () {
 	keys = [];
 	for(var i in this.dictionary) { keys.push(i); }
-	keys.sort(function(a,b){ return this.dictionary[a].count - this.dictionary[b].count; });
+	
+	var that = this;
+	keys.sort(function(a,b){ return that.dictionary[b].count - that.dictionary[a].count; });
 	return keys;
 }
 
