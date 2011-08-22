@@ -16,6 +16,7 @@
       var now = 0;
       var wct;
       var ffwd = 30;
+      var random = false;
       
       $(document).ready(function() {
         
@@ -33,6 +34,18 @@
        
       function time_passes() {
         now++;
+        
+        
+        if ( random ) {
+          if ( now % ffwd != 0 ) 
+            return;
+            
+          var index = Math.round( Math.random() * events.length );
+          add_words(events[index].text);
+          return;
+        }
+        
+       
         
         // Assume events are sorted
         while( events[0].offset < now ) {
